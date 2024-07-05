@@ -1,93 +1,56 @@
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('send-button').addEventListener('click', sendMessage);
+    document.getElementById('user-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+});
+
+function sendMessage() {
+    const userInput = document.getElementById('user-input').value;
+    if (userInput.trim() === '') return;
+
+    addMessage('user', userInput);
+    document.getElementById('user-input').value = '';
+
+    fetchGPTResponse(userInput);
 }
 
-.container {
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    width: 90%;
-    max-width: 600px;
-    display: flex;
-    flex-direction: column;
-    height: 80%;
+function addMessage(sender, message) {
+    const chatBox = document.getElementById('chat-box');
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message', sender);
+    messageElement.innerText = message;
+    chatBox.appendChild(messageElement);
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-header {
-    background: #3b82f6;
-    color: white;
-    padding: 20px;
-    text-align: center;
-}
+async function fetchGPTResponse(userInput) {
+    const prompt = `Namamu RizzGPT, kamu terhubung dengan GPT-4.o, jawab ini: ${userInput}`;
 
-main {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    overflow-y: auto;
-}
+    try {
+        const response = await fetch('https://api.openai.com/v1/engines/davinci-codex/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer sk-proj-5LV4Xw2GLwAtyIfcqkzCT3BlbkFJturLjFC5LZytD8dfaVwo'
+            },
+            body: JSON.stringify({
+                prompt: prompt,
+                max_tokens: 150,
+                n: 1,
+                stop: null,
+                temperature: 0.7
+            })
+        });
+        
+        const data = await response.json();
+        const gptMessage = data.choices[0].text.trim();
+        addMessage('gpt', gptMessage);
 
-#chat-box {
-    flex-grow: 1;
-    margin-bottom: 10px;
-    overflow-y: auto;
-}
-
-.message {
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    width: fit-content;
-}
-
-.user {
-    background-color: #e1f5fe;
-    align-self: flex-end;
-}
-
-.gpt {
-    background-color: #e0f7fa;
-    align-self: flex-start;
-}
-
-.input-box {
-    display: flex;
-}
-
-#user-input {
-    flex-grow: 1;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px 0 0 5px;
-    outline: none;
-}
-
-#send-button {
-    padding: 10px 20px;
-    border: none;
-    background: #3b82f6;
-    color: white;
-    cursor: pointer;
-    border-radius: 0 5px 5px 0;
-    transition: background 0.3s;
-}
-
-#send-button:hover {
-    background: #2563eb;
-}
-
-footer {
-    background: #f1f5f9;
-    padding: 10px;
-    text-align: center;
-    font-size: 12px;
-    color: #555;
+    } catch (error) {
+        console.error('Error fetching GPT response:', error);
+        addMessage('gpt', 'Sorry, there was an error processing your request.');
+    }
 }
